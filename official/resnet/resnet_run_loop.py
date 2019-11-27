@@ -76,9 +76,15 @@ def process_record_dataset(dataset,
     Dataset of (image, label) pairs ready for iteration.
   """
 
+  # KungFu: Shard the dataset
+  if is_training:
+    from kungfu import current_cluster_size, current_rank
+    dataset = dataset.shard(num_shards=current_cluster_size(), index=current_rank())
+
   # Prefetches a batch at a time to smooth out the time taken to load input
   # files for shuffling and processing.
   dataset = dataset.prefetch(buffer_size=batch_size)
+
   if is_training:
     # Shuffles records before repeating to respect epoch boundaries.
     dataset = dataset.shuffle(buffer_size=shuffle_buffer)
@@ -377,6 +383,10 @@ def resnet_model_fn(features, labels, mode, model_class,
         momentum=momentum
     )
 
+    # KungFu: wrap optimizer
+    from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
+    optimizer = SynchronousSGDOptimizer(optimizer)
+
     def _dense_grad_filter(gvs):
       """Only apply gradient updates to the final layer.
 
@@ -402,12 +412,12 @@ def resnet_model_fn(features, labels, mode, model_class,
       # back to the correct scale before passing them to the optimizer.
       unscaled_grad_vars = [(grad / loss_scale, var)
                             for grad, var in scaled_grad_vars]
-      minimize_op = optimizer.apply_gradients(unscaled_grad_vars, global_step)
+      minimize_op = optimizer.apply_gradients(unscaled_grad_vars, global_step=global_step)
     else:
       grad_vars = optimizer.compute_gradients(loss)
       if fine_tune:
         grad_vars = _dense_grad_filter(grad_vars)
-      minimize_op = optimizer.apply_gradients(grad_vars, global_step)
+      minimize_op = optimizer.apply_gradients(grad_vars, global_step=global_step)
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     train_op = tf.group(minimize_op, update_ops)
@@ -516,6 +526,10 @@ def resnet_main(
       flags_obj.hooks,
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
+
+  # KungFu
+  from kungfu.tensorflow.initializer import BroadcastGlobalVariablesHook
+  train_hooks.append(BroadcastGlobalVariablesHook())
 
   def input_fn_train(num_epochs):
     return input_function(

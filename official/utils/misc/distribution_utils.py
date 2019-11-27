@@ -39,13 +39,15 @@ def get_distribution_strategy(num_gpus, all_reduce_alg=None):
   elif num_gpus == 1:
     return tf.contrib.distribute.OneDeviceStrategy("device:GPU:0")
   else:
-    if all_reduce_alg:
-      return tf.contrib.distribute.MirroredStrategy(
-          num_gpus=num_gpus,
-          cross_tower_ops=tf.contrib.distribute.AllReduceCrossDeviceOps(
-              all_reduce_alg, num_packs=2))
-    else:
-      return tf.contrib.distribute.MirroredStrategy(num_gpus=num_gpus)
+    # KungFu: rely on KungFu to do distributed training.
+    return tf.contrib.distribute.OneDeviceStrategy("device:GPU:0")
+    # if all_reduce_alg:
+    #   return tf.contrib.distribute.MirroredStrategy(
+    #       num_gpus=num_gpus,
+    #       cross_tower_ops=tf.contrib.distribute.AllReduceCrossDeviceOps(
+    #           all_reduce_alg, num_packs=2))
+    # else:
+    #   return tf.contrib.distribute.MirroredStrategy(num_gpus=num_gpus)
 
 
 def per_device_batch_size(batch_size, num_gpus):
