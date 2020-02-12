@@ -28,14 +28,15 @@ fi
 FLAGS=
 FLAGS="$FLAGS -md $model_dir"
 
-H=127.0.0.1:2
-port_range=40001-40002
+cap=4
+H=127.0.0.1:$cap
+port_range=40001-40004
 
 kungfu_run() {
     kungfu-run -q -logdir logs -logfile kungfu-run.log -port 40000 -port-range $port_range -H $H -np $@
 }
 
-export CUDA_VISIBLE_DEVICES=3
+# export CUDA_VISIBLE_DEVICES=3
 
 train_cifar10() {
     local epochs=$1
@@ -51,4 +52,4 @@ train_cifar10() {
         -te $epochs
 }
 
-measure train_cifar10 1 1 64
+measure train_cifar10 1 4 64
