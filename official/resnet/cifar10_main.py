@@ -29,6 +29,9 @@ from official.utils.logs import logger
 from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
 
+from tensorflow.python.util import deprecation
+deprecation._PRINT_DEPRECATION_WARNINGS = False
+
 _HEIGHT = 32
 _WIDTH = 32
 _NUM_CHANNELS = 3
