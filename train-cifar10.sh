@@ -52,4 +52,4 @@ train_cifar10() {
         -te $epochs
 }
 
-measure train_cifar10 1 4 64
+measure train_cifar10 10 4 50

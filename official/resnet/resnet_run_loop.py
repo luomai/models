@@ -384,8 +384,9 @@ def resnet_model_fn(features, labels, mode, model_class,
     )
 
     # KungFu: wrap optimizer
-    from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
-    optimizer = SynchronousSGDOptimizer(optimizer)
+    # from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
+    from kungfu.tensorflow.optimizers import MonitorGradientNoiseScaleOptimizer
+    optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size=50)
 
     def _dense_grad_filter(gvs):
       """Only apply gradient updates to the final layer.
