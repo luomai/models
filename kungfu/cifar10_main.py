@@ -5,17 +5,12 @@ import tensorflow as tf
 from official.resnet import cifar10_main, resnet_model, resnet_run_loop
 
 
-def main():
-    init_batch_size = 50
-    data_dir = os.path.join(os.getenv('HOME'), 'var/data/cifar')
-
+def train(data_dir, model_dir, init_batch_size, max_steps):
     batch_size = tf.Variable(init_batch_size, dtype=tf.int64, trainable=False)
     input_ds = cifar10_main.input_fn(True, data_dir, batch_size)
-    print(input_ds)
     it = input_ds.make_initializable_iterator()
     features, labels = it.get_next()
 
-    mode = tf.estimator.ModeKeys.TRAIN
     params = {
         'resnet_size': 56,
         'data_format': None,
@@ -26,26 +21,40 @@ def main():
         'fine_tune': False
     }
     print('creating train_step')
-    spec = cifar10_main.cifar10_model_fn(features, labels, mode, params)
-    train_op, eval_metric_ops = spec.train_op, spec.eval_metric_ops
+    spec = cifar10_main.cifar10_model_fn(features, labels,
+                                         tf.estimator.ModeKeys.TRAIN, params)
 
+    step_ops = [
+        spec.train_op,
+        spec.loss,
+        spec.eval_metric_ops,
+    ]
 
-    # print('train_step is')
-    # print(train_op)
-    # print('eval_metric_ops is')
-    # print(eval_metric_ops)
-    max_steps = 10
+    def handle_step(step, _, loss, metrics):
+        print('step: %d, loss: %f, metrics: %s' % (step, loss, metrics))
 
     init = tf.global_variables_initializer()
+    init_local = tf.local_variables_initializer()
     with tf.Session() as sess:
         sess.run(init)
+        sess.run(init_local)
         sess.run(it.initializer)
         for step in range(max_steps):
             print('before step: %d' % (step))
-            sess.run(train_op)
-            # print('before eval: %d' % (step))
-            # metrics = sess.run(eval_metric_ops)
-            # print(metrics)
+            step_result = sess.run(step_ops)
+            handle_step(step, *step_result)
+
+
+def main():
+    from kungfu import current_rank
+    rank = current_rank()
+    model_dir = os.path.join(os.getenv('HOME'), 'tmp/cifar10')
+    model_dir = os.path.join(model_dir, str(rank))
+
+    data_dir = os.path.join(os.getenv('HOME'), 'var/data/cifar')
+    train_steps = 100
+    init_batch_size = 50
+    train(data_dir, model_dir, init_batch_size, train_steps)
 
 
 main()
