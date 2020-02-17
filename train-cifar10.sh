@@ -52,4 +52,5 @@ train_cifar10() {
         -te $epochs
 }
 
-measure train_cifar10 10 4 50
+# measure train_cifar10 1 1 1000
+kungfu_run 1 python3 kungfu/cifar10_main.py
