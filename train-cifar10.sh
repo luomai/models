@@ -53,4 +53,4 @@ train_cifar10() {
 }
 
 # measure train_cifar10 1 1 1000
-kungfu_run 1 python3 kungfu/cifar10_main.py
+kungfu_run 4 python3 kungfu_experiment/cifar10_main.py

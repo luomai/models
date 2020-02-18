@@ -1,13 +1,14 @@
 import os
 
 import tensorflow as tf
-
+from kungfu_experiment.cifar10_dataset import input_fn
 from official.resnet import cifar10_main, resnet_model, resnet_run_loop
 
 
-def train(data_dir, model_dir, init_batch_size, max_steps):
-    batch_size = tf.Variable(init_batch_size, dtype=tf.int64, trainable=False)
-    input_ds = cifar10_main.input_fn(True, data_dir, batch_size)
+def train(data_dir, model_dir, init_batch_size, num_epochs, max_steps):
+    batch_size = tf.placeholder(dtype=tf.int64)
+    offset = tf.placeholder(dtype=tf.int64)
+    input_ds = input_fn(True, data_dir, offset, batch_size, num_epochs)
     it = input_ds.make_initializable_iterator()
     features, labels = it.get_next()
 
@@ -35,10 +36,15 @@ def train(data_dir, model_dir, init_batch_size, max_steps):
 
     init = tf.global_variables_initializer()
     init_local = tf.local_variables_initializer()
-    with tf.Session() as sess:
+    current_offset = 0
+    with tf.train.MonitoredSession() as sess:
         sess.run(init)
         sess.run(init_local)
-        sess.run(it.initializer)
+        sess.run(it.initializer,
+                 feed_dict={
+                     batch_size: init_batch_size,
+                     offset: current_offset,
+                 })
         for step in range(max_steps):
             print('before step: %d' % (step))
             step_result = sess.run(step_ops)
@@ -52,9 +58,10 @@ def main():
     model_dir = os.path.join(model_dir, str(rank))
 
     data_dir = os.path.join(os.getenv('HOME'), 'var/data/cifar')
-    train_steps = 100
+    num_epochs = 2
+    train_steps = 10000
     init_batch_size = 50
-    train(data_dir, model_dir, init_batch_size, train_steps)
+    train(data_dir, model_dir, init_batch_size, num_epochs, train_steps)
 
 
 main()
