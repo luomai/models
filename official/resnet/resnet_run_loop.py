@@ -532,12 +532,11 @@ def resnet_main(
   from kungfu.tensorflow.initializer import BroadcastGlobalVariablesHook
   train_hooks.append(BroadcastGlobalVariablesHook())
 
-  def input_fn_train(num_epochs):
+  def input_fn_train(num_epochs, device_batch_size):
     return input_function(
         is_training=True,
         data_dir=flags_obj.data_dir,
-        batch_size=distribution_utils.per_device_batch_size(
-            flags_obj.batch_size, flags_core.get_num_gpus(flags_obj)),
+        batch_size=device_batch_size,
         num_epochs=num_epochs,
         dtype=flags_core.get_tf_dtype(flags_obj),
         datasets_num_private_threads=flags_obj.datasets_num_private_threads,
@@ -568,15 +567,23 @@ def resnet_main(
     schedule = [flags_obj.epochs_between_evals for _ in range(int(n_loops))]
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
+  epoch = 0
+  boundary_epochs = [91, 136, 182]
+  device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
+
   for cycle_index, num_train_epochs in enumerate(schedule):
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
     if num_train_epochs:
       for i in range(num_train_epochs):
+        epoch += 1
+        if epoch in boundary_epochs:
+          device_batch_size *= 2
+        print('epoch %d, device_batch_size=%d' % (epoch, device_batch_size))
         import time
         t0 = time.time()
         print('BEGIN iter %d of cycle %d' % (i, cycle_index))
-        classifier.train(input_fn=lambda: input_fn_train(1),
+        classifier.train(input_fn=lambda: input_fn_train(1, device_batch_size),
                         hooks=train_hooks, max_steps=flags_obj.max_train_steps)
         took = time.time() - t0
         print('END iter %d of cycle %d, took %.2fs' % (i, cycle_index, took))
