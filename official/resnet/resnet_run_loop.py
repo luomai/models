@@ -572,8 +572,14 @@ def resnet_main(
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
     if num_train_epochs:
-      classifier.train(input_fn=lambda: input_fn_train(num_train_epochs),
-                       hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      for i in range(num_train_epochs):
+        import time
+        t0 = time.time()
+        print('BEGIN iter %d of cycle %d' % (i, cycle_index))
+        classifier.train(input_fn=lambda: input_fn_train(1),
+                        hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+        took = time.time() - t0
+        print('END iter %d of cycle %d, took %.2fs' % (i, cycle_index, took))
 
     tf.logging.info('Starting to evaluate.')
 
