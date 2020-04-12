@@ -528,6 +528,9 @@ def resnet_main(
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
 
+  from kungfu_experiment.kungfu_utils import KungfuLogStepHook
+  train_hooks += [KungfuLogStepHook()]
+
   # KungFu
   from kungfu.tensorflow.initializer import BroadcastGlobalVariablesHook
   train_hooks.append(BroadcastGlobalVariablesHook())
@@ -568,26 +571,32 @@ def resnet_main(
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
   epoch = 0
-  boundary_epochs = [91, 136, 182]
+  boundary_epochs = []
+  # boundary_epochs = [91, 136, 182]
   device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
 
   for cycle_index, num_train_epochs in enumerate(schedule):
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
     if num_train_epochs:
-      for i in range(num_train_epochs):
-        epoch += 1
-        if epoch in boundary_epochs:
-          device_batch_size *= 2
-        print('epoch %d, device_batch_size=%d' % (epoch, device_batch_size))
-        import time
-        t0 = time.time()
-        print('BEGIN iter %d of cycle %d' % (i, cycle_index))
-        classifier.train(input_fn=lambda: input_fn_train(1, device_batch_size),
-                        hooks=train_hooks, max_steps=flags_obj.max_train_steps)
-        took = time.time() - t0
-        print('END iter %d of cycle %d, took %.2fs' % (i, cycle_index, took))
-
+      print('begin cycle %d, training %d epochs' % (cycle_index, num_train_epochs))
+      import time
+      cycle_begin = time.time()
+      classifier.train(input_fn=lambda: input_fn_train(num_train_epochs, device_batch_size),
+                      hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      # for i in range(num_train_epochs):
+      #   epoch += 1
+      #   if epoch in boundary_epochs:
+      #     device_batch_size *= 2
+      #   print('epoch %d, device_batch_size=%d' % (epoch, device_batch_size))
+      #   t0 = time.time()
+      #   print('BEGIN iter %d of cycle %d' % (i, cycle_index))
+      #   classifier.train(input_fn=lambda: input_fn_train(1, device_batch_size),
+      #                   hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      #   took = time.time() - t0
+      #   print('END iter %d of cycle %d, took %.2fs' % (i, cycle_index, took))
+      cycle_took = time.time() - cycle_begin
+      print('end cycle %d, trained %d epochs took %.2fs' % (cycle_index, num_train_epochs, cycle_took))
     tf.logging.info('Starting to evaluate.')
 
     # flags_obj.max_train_steps is generally associated with testing and
