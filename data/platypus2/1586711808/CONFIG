@@ -1,0 +1,17 @@
+FIXED batch size : 4 x 1024
+
+train_cifar10() {
+    local epochs=$1
+    local np=$2
+    local single_bs=$3
+
+    kungfu_run $np \
+        python3 \
+        official/resnet/cifar10_main.py \
+        $FLAGS \
+        -bs $((np * single_bs)) \
+        -ng $np \
+        -te $epochs
+}
+
+measure train_cifar10 182 4 1024
