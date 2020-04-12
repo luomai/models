@@ -605,10 +605,12 @@ def resnet_main(
     # eval (which is generally unimportant in those circumstances) to terminate.
     # Note that eval will run for max_train_steps each loop, regardless of the
     # global_step count.
+    eval_begin = time.time()
     eval_results = classifier.evaluate(input_fn=input_fn_eval,
                                        steps=flags_obj.max_train_steps)
-
     benchmark_logger.log_evaluation_result(eval_results)
+    eval_dur = time.time() - eval_begin
+    print('evaluate cycle %d took %.2fs' % (cycle_index, eval_dur))
 
     if model_helpers.past_stop_threshold(
         flags_obj.stop_threshold, eval_results['accuracy']):
