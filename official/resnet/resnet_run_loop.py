@@ -571,19 +571,30 @@ def resnet_main(
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
   epoch = 0
-  boundary_epochs = []
-  # boundary_epochs = [91, 136, 182]
+  # boundary_epochs = []
+  boundary_epochs = [91, 136, 182]
   device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
 
+  trained_epoch = 0
   for cycle_index, num_train_epochs in enumerate(schedule):
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
     if num_train_epochs:
-      print('begin cycle %d, training %d epochs' % (cycle_index, num_train_epochs))
+      from kungfu_experiment.kungfu_utils import USE_DYNAMIC_BATCH_SIZE
+      if USE_DYNAMIC_BATCH_SIZE:
+        for e in boundary_epochs:
+          if trained_epoch <= e and e < trained_epoch + num_train_epochs:
+            print('change batch size at cycle %d' % (cycle_index))
+            device_batch_size *= 2
+            break
+
+      print('begin cycle %d, training %d epochs with bs=%d' % (cycle_index, num_train_epochs, device_batch_size))
       import time
       cycle_begin = time.time()
       classifier.train(input_fn=lambda: input_fn_train(num_train_epochs, device_batch_size),
                       hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      trained_epoch += num_train_epochs
+
       # for i in range(num_train_epochs):
       #   epoch += 1
       #   if epoch in boundary_epochs:
