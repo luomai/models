@@ -1,0 +1,4 @@
+dynamic batch size starting with 4 x 64,
+
+change batch size at cycle 9 : 64 -> 128
+change batch size at cycle 13 : 128 -> 256
