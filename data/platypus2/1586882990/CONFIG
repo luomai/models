@@ -1,0 +1,1 @@
+dynamic batch size 4x{64,128,256}, no random shuffle
