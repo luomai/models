@@ -18,7 +18,13 @@ set yrange [0:1]
 #     "1586871328/eval-acc.txt" with linespoints pointtype 4 title 'bs=4x64', \
 #     "1586778089/eval-acc.txt" with linespoints pointtype 6 title 'bs=4x{64,128,256}'
 
-set output "compare-64-2.pdf"
+# set output "compare-64-2.pdf"
+# plot \
+#     "1586880326/eval-acc.txt" with linespoints pointtype 4 title 'bs=4x64', \
+#     "1586882990/eval-acc.txt" with linespoints pointtype 6 title 'bs=4x{64,128,256}'
+
+
+set output "compare-64-3.pdf"
 plot \
-    "1586880326/eval-acc.txt" with linespoints pointtype 4 title 'bs=4x64', \
-    "1586882990/eval-acc.txt" with linespoints pointtype 6 title 'bs=4x{64,128,256}'
+    "1586888710/eval-acc.txt" with linespoints pointtype 4 title 'bs=4x64', \
+    "1586886256/eval-acc.txt" with linespoints pointtype 6 title 'bs=4x{64,128,256}'

@@ -277,6 +277,10 @@ def main(_):
 
 
 if __name__ == '__main__':
+  import random
+  random.seed(0)
+  tf.set_random_seed(0)
+
   tf.logging.set_verbosity(tf.logging.INFO)
   define_cifar_flags()
   absl_app.run(main)
