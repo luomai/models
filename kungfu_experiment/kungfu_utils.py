@@ -2,7 +2,8 @@ import time
 
 import tensorflow as tf
 
-USE_DYNAMIC_BATCH_SIZE = True
+USE_DYNAMIC_BATCH_SIZE = False
+# USE_DYNAMIC_BATCH_SIZE = True
 
 class KungfuLogStepHook(tf.train.SessionRunHook):
     def __init__(self, **kwargs):
