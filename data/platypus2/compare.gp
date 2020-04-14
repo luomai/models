@@ -10,6 +10,7 @@ set key right bottom
 
 set xlabel "Seconds"
 set ylabel "Evaluation Accuracy"
+set yrange [0:1]
 
 plot \
     BASE_LINE_EVAL_ACC with linespoints pointtype 4 title 'bs=32', \
