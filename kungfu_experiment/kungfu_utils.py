@@ -88,7 +88,7 @@ class KungfuSaveInitModelHook(tf.train.SessionRunHook):
 class KungfuLoadInitModelHook(tf.train.SessionRunHook):
     def __init__(self, **kwargs):
         print('%s created' % (self.__class__.__name__))
-        pass
+        self._loaded = False
 
     def begin(self):
         self._variables = tf.global_variables()
@@ -102,8 +102,12 @@ class KungfuLoadInitModelHook(tf.train.SessionRunHook):
             self._assign_ops.append(a)
 
     def after_create_session(self, sess, coord):
+        if self._loaded:
+            return
+
         t0 = time.time()
         load_model(_MODEL_FILE, sess, self._variables, self._placeholders,
                    self._assign_ops)
         print('model loaded from %s, took %.2fs' %
               (_MODEL_FILE, time.time() - t0))
+        self._loaded = True
