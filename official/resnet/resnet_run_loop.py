@@ -529,9 +529,6 @@ def resnet_main(
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
 
-  from kungfu_experiment.kungfu_utils import KungfuLogStepHook
-  train_hooks += [KungfuLogStepHook()]
-
   # KungFu
   from kungfu.tensorflow.initializer import BroadcastGlobalVariablesHook
   train_hooks.append(BroadcastGlobalVariablesHook())

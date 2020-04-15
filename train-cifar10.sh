@@ -19,14 +19,12 @@ export PYTHONWARNINGS='ignore'
 export PYTHONPATH=$MODEL_PATH
 export TF_CPP_MIN_LOG_LEVEL=3
 
+data_dir=$HOME/tmp/data
 model_dir=$HOME/tmp/cifar10
 
 if [ -d $model_dir ]; then
     rm -fr $model_dir
 fi
-
-FLAGS=
-FLAGS="$FLAGS -md $model_dir"
 
 cap=4
 H=127.0.0.1:$cap
@@ -38,6 +36,12 @@ kungfu_run() {
 
 # export CUDA_VISIBLE_DEVICES=3
 
+app_flags() {
+    echo -md $model_dir
+    echo -dd $data_dir
+    echo -hooks "kungfu_log_step_hook,kungfu_load_init_model_hook"
+}
+
 train_cifar10() {
     local epochs=$1
     local np=$2
@@ -46,7 +50,7 @@ train_cifar10() {
     kungfu_run $np \
         python3 \
         official/resnet/cifar10_main.py \
-        $FLAGS \
+        $(app_flags) \
         -bs $((np * single_bs)) \
         -ng $np \
         -te $epochs

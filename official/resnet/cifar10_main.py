@@ -276,7 +276,18 @@ def main(_):
     run_cifar(flags.FLAGS)
 
 
+def register_kungfu_hooks():
+  from official.utils.logs import hooks_helper
+  import kungfu_experiment.kungfu_utils as kf_hooks
+  hooks_helper.HOOKS.update({
+      'kungfu_log_step_hook': kf_hooks.KungfuLogStepHook,
+      'kungfu_save_init_model_hook': kf_hooks.KungfuSaveInitModelHook,
+      'kungfu_load_init_model_hook': kf_hooks.KungfuLoadInitModelHook,
+  })
+
+
 if __name__ == '__main__':
+  register_kungfu_hooks()
   import random
   random.seed(0)
   tf.set_random_seed(0)
