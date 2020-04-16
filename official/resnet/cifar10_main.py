@@ -281,10 +281,16 @@ def register_kungfu_hooks():
   import kungfu_experiment.kungfu_utils as kf_hooks
   hooks_helper.HOOKS.update({
       'kungfu_log_step_hook': kf_hooks.KungfuLogStepHook,
+      'kungfu_save_model_hook': kf_hooks.KungfuSaveModelHook,
       'kungfu_save_init_model_hook': kf_hooks.KungfuSaveInitModelHook,
       'kungfu_load_init_model_hook': kf_hooks.KungfuLoadInitModelHook,
   })
 
+  import kungfu_ext as kfx
+  hooks_helper.HOOKS.update({
+    'kungfu_consistency_check_hook' : kfx.ConsistencyCheckHook,
+    'kungfu_inspect_graph_hook' : kfx.InspectGraphHook,
+  })
 
 if __name__ == '__main__':
   register_kungfu_hooks()

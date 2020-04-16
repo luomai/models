@@ -1,10 +1,15 @@
+import os
 import time
+
+from kungfu import current_rank
 
 import numpy as np
 import tensorflow as tf
 
 USE_DYNAMIC_BATCH_SIZE = False
 # USE_DYNAMIC_BATCH_SIZE = True
+
+START_TIMESTAMP = os.getenv('START_TIMESTAMP')
 
 
 class KungfuLogStepHook(tf.train.SessionRunHook):
@@ -85,10 +90,64 @@ class KungfuSaveInitModelHook(tf.train.SessionRunHook):
         run_context.request_stop()
 
 
+def diff_list(a, b):
+    c = set(a)
+    d = set(b)
+    return list(c - d), list(d - c)
+
+
+def checkpoint_name(prefix, cycle, step):
+    rank = current_rank()
+    return 'job-%s-%s-cycle-%03d-step-%08d-rank-%02d' % (
+        START_TIMESTAMP, prefix, cycle, step, rank)
+
+
+class KungfuSaveModelHook(tf.train.SessionRunHook):
+    def __init__(self, **kwargs):
+        print('%s created' % (self.__class__.__name__))
+        self._step = 0
+        self._cycle = 0
+        self._names = []
+
+    def begin(self):
+        # if self._cycle == 0:
+        self._update_variable_list()
+
+    def after_run(self, run_context, run_values):
+        self._step += 1
+        if self._step <= 2:
+            self._save('after_run', run_context.session)
+
+    def end(self, sess):
+        self._save('end', sess)
+        self._cycle += 1
+
+    def _save(self, prefix, sess):
+        filename = checkpoint_name(prefix, self._cycle, self._step)
+        save_model(filename, sess, self._variables)
+
+    def _update_variable_list(self):
+        self._variables = tf.global_variables()
+        names = [v.name for v in self._variables]
+        if self._names:
+            c, d = diff_list(self._names, names)
+            if c:
+                print('- %d variables')
+                for x in c:
+                    print('- %s' % (x))
+            if d:
+                print('+ %d variables')
+                for x in d:
+                    print('+ %s' % (x))
+        self._names = names
+
+
 class KungfuLoadInitModelHook(tf.train.SessionRunHook):
     def __init__(self, **kwargs):
         print('%s created' % (self.__class__.__name__))
         self._loaded = False
+        self._step = 0
+        self._cycle = 0
 
     def begin(self):
         self._variables = tf.global_variables()
@@ -111,3 +170,14 @@ class KungfuLoadInitModelHook(tf.train.SessionRunHook):
         print('model loaded from %s, took %.2fs' %
               (_MODEL_FILE, time.time() - t0))
         self._loaded = True
+
+    def before_run(self, run_context):
+        if self._step == 0:
+            filename = checkpoint_name('before_run', self._cycle, self._step)
+            save_model(filename, run_context.session, self._variables)
+
+    def after_run(self, run_context, run_values):
+        self._step += 1
+
+    def end(self, sess):
+        self._cycle += 1

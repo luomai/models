@@ -36,10 +36,23 @@ kungfu_run() {
 
 # export CUDA_VISIBLE_DEVICES=3
 
+join() {
+    local IFS=','
+    echo "$*"
+}
+
+hooks() {
+    echo kungfu_log_step_hook
+    echo kungfu_load_init_model_hook
+    echo kungfu_save_model_hook
+    echo kungfu_consistency_check_hook
+    echo kungfu_inspect_graph_hook
+}
+
 app_flags() {
     echo -md $model_dir
     echo -dd $data_dir
-    echo -hooks "kungfu_log_step_hook,kungfu_load_init_model_hook"
+    echo -hooks $(join $(hooks))
 }
 
 train_cifar10() {
@@ -56,5 +69,9 @@ train_cifar10() {
         -te $epochs
 }
 
-measure train_cifar10 182 4 64
+export START_TIMESTAMP=$(date +%s)
+
+# measure train_cifar10 182 4 64
+# measure train_cifar10 1 4 64
+measure train_cifar10 1 1 64
 # kungfu_run 182 python3 kungfu_experiment/cifar10_main.py
