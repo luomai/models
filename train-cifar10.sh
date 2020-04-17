@@ -71,7 +71,7 @@ train_cifar10() {
 
 export START_TIMESTAMP=$(date +%s)
 
-# measure train_cifar10 182 4 64
+measure train_cifar10 182 4 64
 # measure train_cifar10 1 4 64
-measure train_cifar10 1 1 64
+# measure train_cifar10 1 1 64
 # kungfu_run 182 python3 kungfu_experiment/cifar10_main.py

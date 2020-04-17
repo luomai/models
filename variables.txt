@@ -291,6 +291,7 @@
                            resnet_model/batch_normalization_57/moving_variance:0          float32    [64]
                                                      resnet_model/dense/kernel:0          float32    [64, 10]
                                                        resnet_model/dense/bias:0          float32    [10]
+                                                             device_batch_size:0            int32    []
                                            resnet_model/conv2d/kernel/Momentum:0          float32    [3, 3, 3, 16]
                                resnet_model/batch_normalization/gamma/Momentum:0          float32    [16]
                                 resnet_model/batch_normalization/beta/Momentum:0          float32    [16]

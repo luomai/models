@@ -1,0 +1,1 @@
+sha1sum *.npz | sort | awk '{print $1}' | uniq -c
