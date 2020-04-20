@@ -385,17 +385,17 @@ def resnet_model_fn(features, labels, mode, model_class,
     )
 
     # KungFu: wrap optimizer
-    kungfu_opt = 'gns'
-    if kungfu_opt == 'ssgd':
+    from kungfu_experiment.kungfu_utils import KUNGFU_OPT
+    if KUNGFU_OPT == 'ssgd':
       from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
       optimizer = SynchronousSGDOptimizer(optimizer)
-    elif kungfu_opt == 'gns':
+    elif KUNGFU_OPT == 'gns':
       # from kungfu.tensorflow.optimizers import MonitorGradientNoiseScaleOptimizer
       from kungfu_ext import MonitorGradientNoiseScaleOptimizer
-      device_batch_size = tf.Variable(64, dtype=tf.int32, trainable=False, name='device_batch_size')
+      device_batch_size = tf.Variable(32, dtype=tf.int32, trainable=False, name='device_batch_size')
       optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size)
     else:
-      raise RuntimeError('invalid kungfu optimizer %s' % (kungfu_opt))
+      raise RuntimeError('invalid kungfu optimizer %s' % (KUNGFU_OPT))
 
     def _dense_grad_filter(gvs):
       """Only apply gradient updates to the final layer.

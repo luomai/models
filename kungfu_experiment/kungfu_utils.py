@@ -1,15 +1,26 @@
 import os
 import time
 
+from absl import flags
 from kungfu import current_rank
 
 import numpy as np
 import tensorflow as tf
+from official.utils.flags import core as flags_core
 
 USE_DYNAMIC_BATCH_SIZE = False
 # USE_DYNAMIC_BATCH_SIZE = True
 
 START_TIMESTAMP = os.getenv('START_TIMESTAMP')
+KUNGFU_OPT = None # parsed from flags
+# KUNGFU_OPT = 'ssgd'
+# KUNGFU_OPT = 'gns'
+
+
+def define_kungfu_flags():
+    flags.DEFINE_string(name='kungfu_opt',
+                         default='ssgd',
+                         help=flags_core.help_wrap('ssgd | gns'))
 
 
 class KungfuLogStepHook(tf.train.SessionRunHook):
@@ -181,3 +192,25 @@ class KungfuLoadInitModelHook(tf.train.SessionRunHook):
 
     def end(self, sess):
         self._cycle += 1
+
+
+class KungfuChangeBatchSizeHook(tf.train.SessionRunHook):
+    def __init__(self, **kwargs):
+        print('%s created' % (self.__class__.__name__))
+        self._step = 0
+        self._cycle = 0
+
+    def begin(self):
+        pass
+
+    def after_create_session(self, sess, coord):
+        pass
+
+    def before_run(self, run_context):
+        pass
+
+    def after_run(self, run_context, run_values):
+        pass
+
+    def end(self, sess):
+        pass

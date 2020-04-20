@@ -272,6 +272,9 @@ def main(_):
 
   flags.FLAGS.model_dir = os.path.join(flags.FLAGS.model_dir, str(rank))
 
+  import kungfu_experiment.kungfu_utils as kungfu_utils
+  kungfu_utils.KUNGFU_OPT = flags.FLAGS.kungfu_opt
+
   with logger.benchmark_context(flags.FLAGS):
     run_cifar(flags.FLAGS)
 
@@ -300,4 +303,6 @@ if __name__ == '__main__':
 
   tf.logging.set_verbosity(tf.logging.INFO)
   define_cifar_flags()
+  from kungfu_experiment.kungfu_utils import define_kungfu_flags
+  define_kungfu_flags()
   absl_app.run(main)
