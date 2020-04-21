@@ -391,7 +391,7 @@ def resnet_model_fn(features, labels, mode, model_class,
       optimizer = SynchronousSGDOptimizer(optimizer)
     elif KUNGFU_OPT == 'gns':
       # from kungfu.tensorflow.optimizers import MonitorGradientNoiseScaleOptimizer
-      from kungfu_ext import MonitorGradientNoiseScaleOptimizer
+      from kungfu_experiment.gns import MonitorGradientNoiseScaleOptimizer
       device_batch_size = tf.Variable(32, dtype=tf.int32, trainable=False, name='device_batch_size')
       optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size)
     else:

@@ -12,15 +12,15 @@ USE_DYNAMIC_BATCH_SIZE = False
 # USE_DYNAMIC_BATCH_SIZE = True
 
 START_TIMESTAMP = os.getenv('START_TIMESTAMP')
-KUNGFU_OPT = None # parsed from flags
+KUNGFU_OPT = None  # parsed from flags
 # KUNGFU_OPT = 'ssgd'
 # KUNGFU_OPT = 'gns'
 
 
 def define_kungfu_flags():
     flags.DEFINE_string(name='kungfu_opt',
-                         default='ssgd',
-                         help=flags_core.help_wrap('ssgd | gns'))
+                        default='ssgd',
+                        help=flags_core.help_wrap('ssgd | gns'))
 
 
 class KungfuLogStepHook(tf.train.SessionRunHook):
@@ -183,9 +183,10 @@ class KungfuLoadInitModelHook(tf.train.SessionRunHook):
         self._loaded = True
 
     def before_run(self, run_context):
-        if self._step == 0:
-            filename = checkpoint_name('before_run', self._cycle, self._step)
-            save_model(filename, run_context.session, self._variables)
+        pass
+        # if self._step == 0:
+        #     filename = checkpoint_name('before_run', self._cycle, self._step)
+        #     save_model(filename, run_context.session, self._variables)
 
     def after_run(self, run_context, run_values):
         self._step += 1
@@ -194,23 +195,49 @@ class KungfuLoadInitModelHook(tf.train.SessionRunHook):
         self._cycle += 1
 
 
+def must_get_tensor_by_name(name):
+    realname = name + ':0'
+    options = []
+    for v in tf.global_variables():
+        if v.name == realname:
+            options.append(v)
+    [v] = options
+    return v
+
+
 class KungfuChangeBatchSizeHook(tf.train.SessionRunHook):
     def __init__(self, **kwargs):
         print('%s created' % (self.__class__.__name__))
         self._step = 0
         self._cycle = 0
+        self._init_bs = 32
+        self._bs = self._init_bs
 
     def begin(self):
-        pass
+        self._device_batch_size = must_get_tensor_by_name('device_batch_size')
+        self._device_batch_size_place = tf.placeholder(tf.int32)
+        self._set_device_batch_size = tf.assign(self._device_batch_size,
+                                                self._device_batch_size_place)
+        print(self._device_batch_size)
 
     def after_create_session(self, sess, coord):
         pass
 
     def before_run(self, run_context):
-        pass
+        self._update_batch_size(run_context.session, self._bs)
+
+        # show bs
+        bs = run_context.session.run(self._device_batch_size)
+        print('bs=%d' % (bs))
 
     def after_run(self, run_context, run_values):
         pass
 
     def end(self, sess):
-        pass
+        self._bs += 1
+
+    def _update_batch_size(self, sess, bs):
+        feed_dict = {
+            self._device_batch_size_place: bs,
+        }
+        sess.run(self._set_device_batch_size, feed_dict=feed_dict)

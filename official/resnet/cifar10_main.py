@@ -287,6 +287,7 @@ def register_kungfu_hooks():
       'kungfu_save_model_hook': kf_hooks.KungfuSaveModelHook,
       'kungfu_save_init_model_hook': kf_hooks.KungfuSaveInitModelHook,
       'kungfu_load_init_model_hook': kf_hooks.KungfuLoadInitModelHook,
+      'kungfu_change_batch_size_hook': kf_hooks.KungfuChangeBatchSizeHook,
   })
 
   import kungfu_ext as kfx
@@ -294,6 +295,7 @@ def register_kungfu_hooks():
     'kungfu_consistency_check_hook' : kfx.ConsistencyCheckHook,
     'kungfu_inspect_graph_hook' : kfx.InspectGraphHook,
   })
+
 
 if __name__ == '__main__':
   register_kungfu_hooks()
