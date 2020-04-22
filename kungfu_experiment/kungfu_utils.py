@@ -213,12 +213,14 @@ class KungfuChangeBatchSizeHook(tf.train.SessionRunHook):
         self._init_bs = 32
         self._bs = self._init_bs
 
+        self._history_gns = []
+
     def begin(self):
+        self._last_gns = must_get_tensor_by_name('monitor_grads_cond/last_gns')
         self._device_batch_size = must_get_tensor_by_name('device_batch_size')
         self._device_batch_size_place = tf.placeholder(tf.int32)
         self._set_device_batch_size = tf.assign(self._device_batch_size,
                                                 self._device_batch_size_place)
-        print(self._device_batch_size)
 
     def after_create_session(self, sess, coord):
         pass
@@ -231,10 +233,23 @@ class KungfuChangeBatchSizeHook(tf.train.SessionRunHook):
         print('bs=%d' % (bs))
 
     def after_run(self, run_context, run_values):
-        pass
+        gns = self._get_last_gns(run_context.session)
+        print('after step: %d, gns: %f' % (self._step, gns))
+        self._step += 1
 
     def end(self, sess):
-        self._bs += 1
+        record = tuple((self._cycle, self._step, self._get_last_gns(sess)))
+        self._history_gns.append(record)
+        pass
+        # self._bs += 1
+        self._cycle += 1
+
+        if self._cycle == 19:
+            for r in self._history_gns:
+                print(r)
+
+    def _get_last_gns(self, sess):
+        return sess.run(self._last_gns)
 
     def _update_batch_size(self, sess, bs):
         feed_dict = {

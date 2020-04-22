@@ -43,7 +43,8 @@ join() {
 
 hooks() {
     echo kungfu_log_step_hook
-    echo kungfu_load_init_model_hook
+
+    # echo kungfu_load_init_model_hook
     # echo kungfu_save_model_hook
     # echo kungfu_consistency_check_hook
     # echo kungfu_inspect_graph_hook

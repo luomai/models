@@ -1,5 +1,5 @@
 from kungfu._utils import map_maybe
-from kungfu.tensorflow.ops import (counter, current_cluster_size, current_rank,
+from kungfu.tensorflow.ops import (all_reduce, counter, current_cluster_size, current_rank,
                                    fuse, global_noise_scale, group_all_reduce)
 from kungfu.tensorflow.optimizers.core import (_create_kungfu_optimizer,
                                                _KungFuAlgorithm)
@@ -31,8 +31,15 @@ class _GradientNoiseScale(_KungFuAlgorithm):
                                       self._global_batch_size, fuse(grads),
                                       fuse(reduced_grads))
 
-        print_op = tf.print('Gradient Noise Scale:', noise_op)
-        return print_op
+        np = current_cluster_size()
+        mean_noise_op = all_reduce(noise_op) / np
+
+        last_gns = tf.Variable(0, dtype=tf.float32, trainable=False, name='last_gns')
+        with tf.control_dependencies([tf.assign(last_gns, mean_noise_op)]):
+            monitor_op = tf.no_op()
+        # print_op = tf.print('Gradient Noise Scale:', noise_op)
+        # return print_op
+        return monitor_op
 
     def apply_gradients(self, apply_grads_func, grads_and_vars, **kwargs):
         grads, variables = list(zip(*grads_and_vars))
@@ -43,9 +50,11 @@ class _GradientNoiseScale(_KungFuAlgorithm):
                                   summed_grads)
 
         # Monitoring logic
-        monitor_grads_op = tf.cond(
-            tf.equal(tf.mod(self._step, self._interval), 0),
-            lambda: self._monitor(grads, reduced_grads), lambda: tf.no_op())
+        monitor_grads_op = tf.cond(tf.equal(tf.mod(self._step, self._interval),
+                                            0),
+                                   lambda: self._monitor(grads, reduced_grads),
+                                   lambda: tf.no_op(),
+                                   name='monitor_grads_cond')
 
         with tf.control_dependencies([monitor_grads_op]):
             return apply_grads_func(zip(reduced_grads, variables), **kwargs)
