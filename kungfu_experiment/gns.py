@@ -1,6 +1,7 @@
 from kungfu._utils import map_maybe
-from kungfu.tensorflow.ops import (all_reduce, counter, current_cluster_size, current_rank,
-                                   fuse, global_noise_scale, group_all_reduce)
+from kungfu.tensorflow.ops import (all_reduce, counter, current_cluster_size,
+                                   current_rank, fuse, global_noise_scale,
+                                   group_all_reduce)
 from kungfu.tensorflow.optimizers.core import (_create_kungfu_optimizer,
                                                _KungFuAlgorithm)
 
@@ -27,14 +28,20 @@ class _GradientNoiseScale(_KungFuAlgorithm):
 
     def _monitor(self, grads, reduced_grads):
         # Only the master node is doing the global monitoring.
+        alpha = 0.9
         noise_op = global_noise_scale(self._device_batch_size,
-                                      self._global_batch_size, fuse(grads),
-                                      fuse(reduced_grads))
+                                      self._global_batch_size,
+                                      fuse(grads),
+                                      fuse(reduced_grads),
+                                      alpha=alpha)
 
         np = current_cluster_size()
         mean_noise_op = all_reduce(noise_op) / np
 
-        last_gns = tf.Variable(0, dtype=tf.float32, trainable=False, name='last_gns')
+        last_gns = tf.Variable(0,
+                               dtype=tf.float32,
+                               trainable=False,
+                               name='last_gns')
         with tf.control_dependencies([tf.assign(last_gns, mean_noise_op)]):
             monitor_op = tf.no_op()
         # print_op = tf.print('Gradient Noise Scale:', noise_op)

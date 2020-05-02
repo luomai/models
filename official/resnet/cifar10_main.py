@@ -200,9 +200,10 @@ def cifar10_model_fn(features, labels, mode, params):
   """Model function for CIFAR-10."""
   features = tf.reshape(features, [-1, _HEIGHT, _WIDTH, _NUM_CHANNELS])
   # Learning rate schedule follows arXiv:1512.03385 for ResNet-56 and under.
+  boundary_epochs = [1000, 2000, 3000]
   learning_rate_fn = resnet_run_loop.learning_rate_with_decay(
       batch_size=params['batch_size'], batch_denom=128,
-      num_images=_NUM_IMAGES['train'], boundary_epochs=[91, 136, 182],
+      num_images=_NUM_IMAGES['train'], boundary_epochs=boundary_epochs,
       decay_rates=[1, 0.1, 0.01, 0.001])
 
   # Weight decay of 2e-4 diverges from 1e-4 decay used in the ResNet paper

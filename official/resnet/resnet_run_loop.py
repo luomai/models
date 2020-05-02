@@ -579,7 +579,15 @@ def resnet_main(
   epoch = 0
   # boundary_epochs = []
   boundary_epochs = [91, 136, 182]
-  device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
+
+  def get_batch_size():
+    from kungfu_experiment.kungfu_utils import KungfuChangeBatchSizeHook
+    for h in train_hooks:
+      if isinstance(h, KungfuChangeBatchSizeHook):
+        return h._bs
+
+  # device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
+  device_batch_size = get_batch_size()
 
   trained_epoch = 0
   for cycle_index, num_train_epochs in enumerate(schedule):
@@ -588,11 +596,12 @@ def resnet_main(
     if num_train_epochs:
       from kungfu_experiment.kungfu_utils import USE_DYNAMIC_BATCH_SIZE
       if USE_DYNAMIC_BATCH_SIZE:
-        for e in boundary_epochs:
-          if trained_epoch <= e and e < trained_epoch + num_train_epochs:
-            print('change batch size at cycle %d' % (cycle_index))
-            device_batch_size *= 2
-            break
+        device_batch_size = get_batch_size()
+        # for e in boundary_epochs:
+        #   if trained_epoch <= e and e < trained_epoch + num_train_epochs:
+        #     print('change batch size at cycle %d' % (cycle_index))
+        #     device_batch_size *= 2
+        #     break
 
       print('begin cycle %d, training %d epochs with bs=%d' % (cycle_index, num_train_epochs, device_batch_size))
       import time
