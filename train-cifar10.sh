@@ -49,15 +49,15 @@ hooks() {
     # echo kungfu_consistency_check_hook
     # echo kungfu_inspect_graph_hook
 
-    echo kungfu_change_batch_size_hook
+    # echo kungfu_change_batch_size_hook
 }
 
 app_flags() {
     echo -md $model_dir
     echo -dd $data_dir
     echo -hooks $(join $(hooks))
-    # echo -kungfu_opt ssgd
-    echo -kungfu_opt gns
+    echo -kungfu_opt ssgd
+    # echo -kungfu_opt gns
 }
 
 train_cifar10() {
@@ -69,7 +69,7 @@ train_cifar10() {
         python3 \
         official/resnet/cifar10_main.py \
         $(app_flags) \
-        -bs $((np * single_bs)) \
+        -bs $single_bs \
         -ng $np \
         -te $epochs
 }

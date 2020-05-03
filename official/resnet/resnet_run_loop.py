@@ -392,7 +392,7 @@ def resnet_model_fn(features, labels, mode, model_class,
     elif KUNGFU_OPT == 'gns':
       # from kungfu.tensorflow.optimizers import MonitorGradientNoiseScaleOptimizer
       from kungfu_experiment.gns import MonitorGradientNoiseScaleOptimizer
-      device_batch_size = tf.Variable(32, dtype=tf.int32, trainable=False, name='device_batch_size')
+      device_batch_size = tf.Variable(flags_obj.batch_size, dtype=tf.int32, trainable=False, name='device_batch_size')
       optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size)
     else:
       raise RuntimeError('invalid kungfu optimizer %s' % (KUNGFU_OPT))
@@ -585,6 +585,7 @@ def resnet_main(
     for h in train_hooks:
       if isinstance(h, KungfuChangeBatchSizeHook):
         return h._bs
+    return flags_obj.batch_size
 
   # device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
   device_batch_size = get_batch_size()
