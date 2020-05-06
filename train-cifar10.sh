@@ -20,18 +20,26 @@ export PYTHONPATH=$MODEL_PATH
 export TF_CPP_MIN_LOG_LEVEL=3
 
 data_dir=$HOME/tmp/data
-model_dir=$HOME/tmp/cifar10
+model_dir_prefix=$HOME/tmp/cifar10
+model_dir=$model_dir_prefix
 
-if [ -d $model_dir ]; then
-    rm -fr $model_dir
-fi
 
 cap=4
 H=127.0.0.1:$cap
 port_range=40001-40004
 
+kungfu_run_flags() {
+    echo -q
+    echo -logdir logs/$job_id
+    echo -logfile kungfu-run.log
+    echo -port 40000
+    echo -port-range $port_range
+    echo -H $H
+    echo -np
+}
+
 kungfu_run() {
-    kungfu-run -q -logdir logs -logfile kungfu-run.log -port 40000 -port-range $port_range -H $H -np $@
+    kungfu-run $(kungfu_run_flags) $@
 }
 
 # export CUDA_VISIBLE_DEVICES=3
@@ -65,6 +73,15 @@ train_cifar10() {
     local np=$2
     local single_bs=$3
 
+    export START_TIMESTAMP=$(date +%s)
+    job_id=fixed-bs-$single_bs
+
+    model_dir=$model_dir_prefix/$job_id
+
+    if [ -d $model_dir ]; then
+        rm -fr $model_dir
+    fi
+
     kungfu_run $np \
         python3 \
         official/resnet/cifar10_main.py \
@@ -74,9 +91,16 @@ train_cifar10() {
         -te $epochs
 }
 
-export START_TIMESTAMP=$(date +%s)
+run_all() {
+    local epochs=210
+    #local epochs=10
+    #local epochs=1
+    measure train_cifar10 $epochs 4 32
+    measure train_cifar10 $epochs 4 64
+    measure train_cifar10 $epochs 4 128
+    measure train_cifar10 $epochs 4 256
+    measure train_cifar10 $epochs 4 512
+}
 
-measure train_cifar10 200 4 64
-# measure train_cifar10 1 4 64
-# measure train_cifar10 1 1 64
-# kungfu_run 182 python3 kungfu_experiment/cifar10_main.py
+measure run_all
+

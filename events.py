@@ -77,7 +77,7 @@ def process_folder(ckpt_dir):
     return host, int(t0), filename
 
 
-def main(ckpt_dir):
+def main(ckpt_dir, job_name=None):
     train_tags = [
         'loss',
         'train_accuracy_1',
@@ -87,13 +87,16 @@ def main(ckpt_dir):
         'accuracy',
     ]
 
-    prefix = 'data'
+    output_dir = 'data'
 
     host, t0, filename = process_folder(ckpt_dir)
     rows = select_events(filename, select_tags, train_tags, t0)
 
     ts, loss, acc = zip(*rows)
-    prefix = os.path.join(prefix, host, str(t0))
+    if job_name is None:
+        job_name = str(t0)
+    prefix = os.path.join(output_dir, host, job_name)
+
     os.makedirs(prefix, exist_ok=True)
     save_columns(prefix, 'train-loss.txt', ts, loss)
     save_columns(prefix, 'train-acc.txt', ts, acc)
@@ -105,7 +108,11 @@ def main(ckpt_dir):
     save_columns(prefix, 'eval-loss.txt', ts, loss)
     save_columns(prefix, 'eval-acc.txt', ts, acc)
 
-    print('%s/%s' % (host, t0))
+    print('%s/%s' % (host, job_name))
 
 
-main(sys.argv[1])
+job_name = None
+if len(sys.argv) > 2:
+    job_name = sys.argv[2]
+main(sys.argv[1], job_name)
+

@@ -595,7 +595,8 @@ def resnet_main(
   if eval_on_start:
     eval_results = classifier.evaluate(input_fn=input_fn_eval,
                                        steps=flags_obj.max_train_steps)
-    print(eval_results)
+    benchmark_logger.log_evaluation_result(eval_results)
+    print('#%d: %s' % (0, eval_results))
 
   trained_epoch = 0
   for cycle_index, num_train_epochs in enumerate(schedule):
@@ -645,7 +646,7 @@ def resnet_main(
     benchmark_logger.log_evaluation_result(eval_results)
     eval_dur = time.time() - eval_begin
     print('evaluate cycle %d took %.2fs' % (cycle_index, eval_dur))
-    print(eval_results)
+    print('#%d: %s' % (cycle_index + 1, eval_results))
 
     if model_helpers.past_stop_threshold(
         flags_obj.stop_threshold, eval_results['accuracy']):
