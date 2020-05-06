@@ -24,8 +24,11 @@ plot_job() {
     plot data/$dir
 }
 
-plot_job fixed-bs-32
-plot_job fixed-bs-64
-plot_job fixed-bs-128
-plot_job fixed-bs-256
-plot_job fixed-bs-512
+# plot_job fixed-bs-32
+# plot_job fixed-bs-64
+# plot_job fixed-bs-128
+# plot_job fixed-bs-256
+# plot_job fixed-bs-512
+
+
+plot_job adaptive-bs-32

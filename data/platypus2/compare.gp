@@ -31,8 +31,9 @@ set yrange [0:1]
 
 set output "compare-fixed-bs.pdf"
 plot \
-    "fixed-bs-32/eval-acc.txt"  with linespoints title 'bs=4x32',  \
-    "fixed-bs-64/eval-acc.txt"  with linespoints title 'bs=4x64',  \
-    "fixed-bs-128/eval-acc.txt" with linespoints title 'bs=4x128', \
-    "fixed-bs-256/eval-acc.txt" with linespoints title 'bs=4x256', \
-    "fixed-bs-512/eval-acc.txt" with linespoints title 'bs=4x512', \
+    "fixed-bs-32/eval-acc.txt"  with linespoints title 'fixed bs=4x32',  \
+    "fixed-bs-64/eval-acc.txt"  with linespoints title 'fixed bs=4x64',  \
+    "fixed-bs-128/eval-acc.txt" with linespoints title 'fixed bs=4x128', \
+    "fixed-bs-256/eval-acc.txt" with linespoints title 'fixed bs=4x256', \
+    "fixed-bs-512/eval-acc.txt" with linespoints title 'fixed bs=4x512', \
+    "adaptive-bs-32/eval-acc.txt" with linespoints title 'adaptive bs ~ 4x32', \
