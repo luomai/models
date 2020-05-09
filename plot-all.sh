@@ -29,6 +29,6 @@ plot_job() {
 # plot_job fixed-bs-128
 # plot_job fixed-bs-256
 # plot_job fixed-bs-512
+plot_job fixed-bs-1024
 
-
-plot_job adaptive-bs-32
+# plot_job adaptive-bs-32
