@@ -92,18 +92,17 @@ train_cifar10() {
 }
 
 run_all() {
-    local epochs=210
+    local epochs=300
     #local epochs=10
     #local epochs=1
 
-    # measure train_cifar10 $epochs 4 32
-    # measure train_cifar10 $epochs 4 64
-    # measure train_cifar10 $epochs 4 128
-    # measure train_cifar10 $epochs 4 256
-    # measure train_cifar10 $epochs 4 512
+    measure train_cifar10 $epochs 4 32
+    measure train_cifar10 $epochs 4 64
+    measure train_cifar10 $epochs 4 128
+    measure train_cifar10 $epochs 4 256
+    measure train_cifar10 $epochs 4 512
 
-    measure train_cifar10 $epochs 4 1024
+    # measure train_cifar10 $epochs 4 1024
 }
 
 measure run_all
-
