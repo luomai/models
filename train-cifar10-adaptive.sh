@@ -19,7 +19,8 @@ export PYTHONWARNINGS='ignore'
 export PYTHONPATH=$MODEL_PATH
 export TF_CPP_MIN_LOG_LEVEL=3
 
-data_dir=$HOME/tmp/data
+# data_dir=$HOME/tmp/data
+data_dir=$HOME/var/data/cifar
 model_dir_prefix=$HOME/tmp/cifar10
 model_dir=$model_dir_prefix
 

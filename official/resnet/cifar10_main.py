@@ -268,7 +268,7 @@ def run_cifar(flags_obj):
 
 
 def main(_):
-  from kungfu import current_rank
+  from kungfu.python import current_rank
   rank = current_rank()
 
   flags.FLAGS.model_dir = os.path.join(flags.FLAGS.model_dir, str(rank))
@@ -291,11 +291,11 @@ def register_kungfu_hooks():
       'kungfu_change_batch_size_hook': kf_hooks.KungfuChangeBatchSizeHook,
   })
 
-  import kungfu_ext as kfx
-  hooks_helper.HOOKS.update({
-    'kungfu_consistency_check_hook' : kfx.ConsistencyCheckHook,
-    'kungfu_inspect_graph_hook' : kfx.InspectGraphHook,
-  })
+  # import kungfu_ext as kfx
+  # hooks_helper.HOOKS.update({
+  #   'kungfu_consistency_check_hook' : kfx.ConsistencyCheckHook,
+  #   'kungfu_inspect_graph_hook' : kfx.InspectGraphHook,
+  # })
 
 
 if __name__ == '__main__':

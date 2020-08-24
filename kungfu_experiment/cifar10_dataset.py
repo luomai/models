@@ -18,7 +18,7 @@ def process_record_dataset(dataset,
 
     # KungFu: Shard the dataset
     if is_training:
-        from kungfu import current_cluster_size, current_rank
+        from kungfu.python import current_cluster_size, current_rank
         dataset = dataset.shard(num_shards=current_cluster_size(),
                                 index=current_rank())
 

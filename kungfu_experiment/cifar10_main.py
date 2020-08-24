@@ -52,7 +52,7 @@ def train(data_dir, model_dir, init_batch_size, num_epochs, max_steps):
 
 
 def main():
-    from kungfu import current_rank
+    from kungfu.python import current_rank
     rank = current_rank()
     model_dir = os.path.join(os.getenv('HOME'), 'tmp/cifar10')
     model_dir = os.path.join(model_dir, str(rank))

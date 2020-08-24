@@ -350,7 +350,7 @@ def run_imagenet(flags_obj):
 
 
 def main(_):
-  from kungfu import current_rank
+  from kungfu.python import current_rank
   rank = current_rank()
 
   flags.FLAGS.model_dir = os.path.join(flags.FLAGS.model_dir, str(rank))
