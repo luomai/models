@@ -76,12 +76,19 @@ def process_record_dataset(dataset,
     Dataset of (image, label) pairs ready for iteration.
   """
 
+  # KungFu: Shard the dataset
+  if is_training:
+    from kungfu.python import current_cluster_size, current_rank
+    dataset = dataset.shard(num_shards=current_cluster_size(), index=current_rank())
+
   # Prefetches a batch at a time to smooth out the time taken to load input
   # files for shuffling and processing.
   dataset = dataset.prefetch(buffer_size=batch_size)
+
   if is_training:
     # Shuffles records before repeating to respect epoch boundaries.
-    dataset = dataset.shuffle(buffer_size=shuffle_buffer)
+    # dataset = dataset.shuffle(buffer_size=shuffle_buffer)
+    pass
 
   # Repeats the dataset for the number of epochs to train.
   dataset = dataset.repeat(num_epochs)
@@ -377,6 +384,20 @@ def resnet_model_fn(features, labels, mode, model_class,
         momentum=momentum
     )
 
+    # KungFu: wrap optimizer
+    from kungfu_experiment.kungfu_utils import KUNGFU_OPT
+    if KUNGFU_OPT == 'ssgd':
+      from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
+      optimizer = SynchronousSGDOptimizer(optimizer)
+    elif KUNGFU_OPT == 'gns':
+      # from kungfu.tensorflow.optimizers import MonitorGradientNoiseScaleOptimizer
+      from kungfu_experiment.gns import MonitorGradientNoiseScaleOptimizer
+      init_bs = 32
+      device_batch_size = tf.Variable(init_bs, dtype=tf.int32, trainable=False, name='device_batch_size')
+      optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size)
+    else:
+      raise RuntimeError('invalid kungfu optimizer %s' % (KUNGFU_OPT))
+
     def _dense_grad_filter(gvs):
       """Only apply gradient updates to the final layer.
 
@@ -402,12 +423,12 @@ def resnet_model_fn(features, labels, mode, model_class,
       # back to the correct scale before passing them to the optimizer.
       unscaled_grad_vars = [(grad / loss_scale, var)
                             for grad, var in scaled_grad_vars]
-      minimize_op = optimizer.apply_gradients(unscaled_grad_vars, global_step)
+      minimize_op = optimizer.apply_gradients(unscaled_grad_vars, global_step=global_step)
     else:
       grad_vars = optimizer.compute_gradients(loss)
       if fine_tune:
         grad_vars = _dense_grad_filter(grad_vars)
-      minimize_op = optimizer.apply_gradients(grad_vars, global_step)
+      minimize_op = optimizer.apply_gradients(grad_vars, global_step=global_step)
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     train_op = tf.group(minimize_op, update_ops)
@@ -517,12 +538,15 @@ def resnet_main(
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
 
-  def input_fn_train(num_epochs):
+  # KungFu
+  from kungfu.tensorflow.initializer import BroadcastGlobalVariablesHook
+  train_hooks.append(BroadcastGlobalVariablesHook())
+
+  def input_fn_train(num_epochs, device_batch_size):
     return input_function(
         is_training=True,
         data_dir=flags_obj.data_dir,
-        batch_size=distribution_utils.per_device_batch_size(
-            flags_obj.batch_size, flags_core.get_num_gpus(flags_obj)),
+        batch_size=device_batch_size,
         num_epochs=num_epochs,
         dtype=flags_core.get_tf_dtype(flags_obj),
         datasets_num_private_threads=flags_obj.datasets_num_private_threads,
@@ -553,13 +577,61 @@ def resnet_main(
     schedule = [flags_obj.epochs_between_evals for _ in range(int(n_loops))]
     schedule[-1] = flags_obj.train_epochs - sum(schedule[:-1])  # over counting.
 
+  epoch = 0
+  # boundary_epochs = []
+  boundary_epochs = [91, 136, 182]
+
+  def get_batch_size():
+    from kungfu_experiment.kungfu_utils import KungfuChangeBatchSizeHook
+    for h in train_hooks:
+      if isinstance(h, KungfuChangeBatchSizeHook):
+        return h._bs
+    return flags_obj.batch_size
+
+  # device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
+  device_batch_size = get_batch_size()
+
+  eval_on_start = True
+  if eval_on_start:
+    eval_results = classifier.evaluate(input_fn=input_fn_eval,
+                                       steps=flags_obj.max_train_steps)
+    benchmark_logger.log_evaluation_result(eval_results)
+    print('#%d: %s' % (0, eval_results))
+
+  trained_epoch = 0
   for cycle_index, num_train_epochs in enumerate(schedule):
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
     if num_train_epochs:
-      classifier.train(input_fn=lambda: input_fn_train(num_train_epochs),
-                       hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      from kungfu_experiment.kungfu_utils import USE_DYNAMIC_BATCH_SIZE
+      if USE_DYNAMIC_BATCH_SIZE:
+        device_batch_size = get_batch_size()
+        # for e in boundary_epochs:
+        #   if trained_epoch <= e and e < trained_epoch + num_train_epochs:
+        #     print('change batch size at cycle %d' % (cycle_index))
+        #     device_batch_size *= 2
+        #     break
 
+      print('begin cycle %d, training %d epochs with bs=%d' % (cycle_index, num_train_epochs, device_batch_size))
+      import time
+      cycle_begin = time.time()
+      classifier.train(input_fn=lambda: input_fn_train(num_train_epochs, device_batch_size),
+                      hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      trained_epoch += num_train_epochs
+
+      # for i in range(num_train_epochs):
+      #   epoch += 1
+      #   if epoch in boundary_epochs:
+      #     device_batch_size *= 2
+      #   print('epoch %d, device_batch_size=%d' % (epoch, device_batch_size))
+      #   t0 = time.time()
+      #   print('BEGIN iter %d of cycle %d' % (i, cycle_index))
+      #   classifier.train(input_fn=lambda: input_fn_train(1, device_batch_size),
+      #                   hooks=train_hooks, max_steps=flags_obj.max_train_steps)
+      #   took = time.time() - t0
+      #   print('END iter %d of cycle %d, took %.2fs' % (i, cycle_index, took))
+      cycle_took = time.time() - cycle_begin
+      print('end cycle %d, trained %d epochs took %.2fs' % (cycle_index, num_train_epochs, cycle_took))
     tf.logging.info('Starting to evaluate.')
 
     # flags_obj.max_train_steps is generally associated with testing and
@@ -568,10 +640,13 @@ def resnet_main(
     # eval (which is generally unimportant in those circumstances) to terminate.
     # Note that eval will run for max_train_steps each loop, regardless of the
     # global_step count.
+    eval_begin = time.time()
     eval_results = classifier.evaluate(input_fn=input_fn_eval,
                                        steps=flags_obj.max_train_steps)
-
     benchmark_logger.log_evaluation_result(eval_results)
+    eval_dur = time.time() - eval_begin
+    print('evaluate cycle %d took %.2fs' % (cycle_index, eval_dur))
+    print('#%d: %s' % (cycle_index + 1, eval_results))
 
     if model_helpers.past_stop_threshold(
         flags_obj.stop_threshold, eval_results['accuracy']):

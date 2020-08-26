@@ -29,6 +29,9 @@ from official.utils.logs import logger
 from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
 
+from tensorflow.python.util import deprecation
+deprecation._PRINT_DEPRECATION_WARNINGS = False
+
 _HEIGHT = 32
 _WIDTH = 32
 _NUM_CHANNELS = 3
@@ -197,9 +200,10 @@ def cifar10_model_fn(features, labels, mode, params):
   """Model function for CIFAR-10."""
   features = tf.reshape(features, [-1, _HEIGHT, _WIDTH, _NUM_CHANNELS])
   # Learning rate schedule follows arXiv:1512.03385 for ResNet-56 and under.
+  boundary_epochs = [1000, 2000, 3000]
   learning_rate_fn = resnet_run_loop.learning_rate_with_decay(
       batch_size=params['batch_size'], batch_denom=128,
-      num_images=_NUM_IMAGES['train'], boundary_epochs=[91, 136, 182],
+      num_images=_NUM_IMAGES['train'], boundary_epochs=boundary_epochs,
       decay_rates=[1, 0.1, 0.01, 0.001])
 
   # Weight decay of 2e-4 diverges from 1e-4 decay used in the ResNet paper
@@ -264,11 +268,44 @@ def run_cifar(flags_obj):
 
 
 def main(_):
+  from kungfu.python import current_rank
+  rank = current_rank()
+
+  flags.FLAGS.model_dir = os.path.join(flags.FLAGS.model_dir, str(rank))
+
+  import kungfu_experiment.kungfu_utils as kungfu_utils
+  kungfu_utils.KUNGFU_OPT = flags.FLAGS.kungfu_opt
+
   with logger.benchmark_context(flags.FLAGS):
     run_cifar(flags.FLAGS)
 
 
+def register_kungfu_hooks():
+  from official.utils.logs import hooks_helper
+  import kungfu_experiment.kungfu_utils as kf_hooks
+  hooks_helper.HOOKS.update({
+      'kungfu_log_step_hook': kf_hooks.KungfuLogStepHook,
+      'kungfu_save_model_hook': kf_hooks.KungfuSaveModelHook,
+      'kungfu_save_init_model_hook': kf_hooks.KungfuSaveInitModelHook,
+      'kungfu_load_init_model_hook': kf_hooks.KungfuLoadInitModelHook,
+      'kungfu_change_batch_size_hook': kf_hooks.KungfuChangeBatchSizeHook,
+  })
+
+  # import kungfu_ext as kfx
+  # hooks_helper.HOOKS.update({
+  #   'kungfu_consistency_check_hook' : kfx.ConsistencyCheckHook,
+  #   'kungfu_inspect_graph_hook' : kfx.InspectGraphHook,
+  # })
+
+
 if __name__ == '__main__':
+  register_kungfu_hooks()
+  import random
+  random.seed(0)
+  tf.set_random_seed(0)
+
   tf.logging.set_verbosity(tf.logging.INFO)
   define_cifar_flags()
+  from kungfu_experiment.kungfu_utils import define_kungfu_flags
+  define_kungfu_flags()
   absl_app.run(main)

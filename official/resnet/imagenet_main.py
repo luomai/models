@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 
 from absl import app as absl_app
 from absl import flags
@@ -29,6 +30,9 @@ from official.utils.logs import logger
 from official.resnet import imagenet_preprocessing
 from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
+
+from tensorflow.python.util import deprecation
+deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 _DEFAULT_IMAGE_SIZE = 224
 _NUM_CHANNELS = 3
@@ -346,6 +350,11 @@ def run_imagenet(flags_obj):
 
 
 def main(_):
+  from kungfu.python import current_rank
+  rank = current_rank()
+
+  flags.FLAGS.model_dir = os.path.join(flags.FLAGS.model_dir, str(rank))
+
   with logger.benchmark_context(flags.FLAGS):
     run_imagenet(flags.FLAGS)
 
