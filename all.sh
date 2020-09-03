@@ -1,6 +1,6 @@
-Run KungFu Experiment for OSDI'20 paper (Fig 4)
+#!/bin/sh
+set -e
 
-```bash
 # download dataset to $HOME/var/data/cifar
 ./download-cifar10-data.sh
 
@@ -9,4 +9,3 @@ Run KungFu Experiment for OSDI'20 paper (Fig 4)
 
 # run adaptive batch size
 ./train-cifar10-adaptive.sh
-```
