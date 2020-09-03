@@ -19,7 +19,7 @@ export PYTHONWARNINGS='ignore'
 export PYTHONPATH=$MODEL_PATH
 export TF_CPP_MIN_LOG_LEVEL=3
 
-data_dir=$HOME/tmp/data
+data_dir=$HOME/var/data/cifar
 model_dir_prefix=$HOME/tmp/cifar10
 model_dir=$model_dir_prefix
 
@@ -51,13 +51,6 @@ join() {
 
 hooks() {
     echo kungfu_log_step_hook
-
-    # echo kungfu_load_init_model_hook
-    # echo kungfu_save_model_hook
-    # echo kungfu_consistency_check_hook
-    # echo kungfu_inspect_graph_hook
-
-    # echo kungfu_change_batch_size_hook
 }
 
 app_flags() {
