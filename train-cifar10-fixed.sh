@@ -23,7 +23,6 @@ data_dir=$HOME/var/data/cifar
 model_dir_prefix=$HOME/tmp/cifar10
 model_dir=$model_dir_prefix
 
-
 cap=4
 H=127.0.0.1:$cap
 port_range=40001-40004
@@ -58,7 +57,6 @@ app_flags() {
     echo -dd $data_dir
     echo -hooks $(join $(hooks))
     echo -kungfu_opt ssgd
-    # echo -kungfu_opt gns
 }
 
 train_cifar10() {
@@ -86,16 +84,16 @@ train_cifar10() {
 
 run_all() {
     local epochs=300
-    #local epochs=10
-    #local epochs=1
+    # local epochs=10
+    # local epochs=1
 
-    # measure train_cifar10 $epochs 4 32
+    measure train_cifar10 $epochs 4 32 # small batch size (SBS) baseline
     # measure train_cifar10 $epochs 4 64
     # measure train_cifar10 $epochs 4 128
     # measure train_cifar10 $epochs 4 256
     # measure train_cifar10 $epochs 4 512
 
-    measure train_cifar10 $epochs 4 1024
+    measure train_cifar10 $epochs 4 1024 # large batch size (LBS) baseline
 }
 
 measure run_all
