@@ -9,4 +9,7 @@ Run KungFu Experiment for OSDI'20 paper (Fig 4)
 
 # run adaptive batch size
 ./train-cifar10-adaptive.sh
+
+# Generate the plots
+./plot-all.sh
 ```
