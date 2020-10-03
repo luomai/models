@@ -24,6 +24,8 @@ model_dir_prefix=$HOME/tmp/cifar10
 job_id=init
 model_dir=$model_dir_prefix/$job_id
 
+export CUDA_VISIBLE_DEVICES=0
+
 join() {
     local IFS=','
     echo "$*"
