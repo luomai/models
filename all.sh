@@ -1,14 +1,24 @@
 #!/bin/sh
 set -e
 
+now() { date +%s; }
+
+measure() {
+    local begin=$(now)
+    $@
+    local end=$(now)
+    local duration=$((end - begin))
+    echo "$@ took ${duration}s"
+}
+
 # download dataset to $HOME/var/data/cifar
-./download-cifar10-data.sh
+measure ./download-cifar10-data.sh
 
 # generate a init checkpoint
 ./generate-init.sh
 
 # run static baseline
-./train-cifar10-fixed.sh
+measure ./train-cifar10-fixed.sh
 
 # run adaptive batch size
-./train-cifar10-adaptive.sh
+measure ./train-cifar10-adaptive.sh
