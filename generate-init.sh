@@ -40,7 +40,7 @@ app_flags() {
     echo -md $model_dir
     echo -dd $data_dir
     echo -hooks $(join $(hooks))
-    echo -kungfu_opt ssgd
+    echo -kungfu_opt gns
 }
 
 main() {

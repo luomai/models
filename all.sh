@@ -15,10 +15,10 @@ measure() {
 measure ./download-cifar10-data.sh
 
 # generate a init checkpoint
-./generate-init.sh
-
-# run static baseline
-measure ./train-cifar10-fixed.sh
+measure ./generate-init.sh
 
 # run adaptive batch size
 measure ./train-cifar10-adaptive.sh
+
+# run static baseline
+measure ./train-cifar10-fixed.sh
