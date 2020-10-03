@@ -4,6 +4,9 @@ set -e
 # download dataset to $HOME/var/data/cifar
 ./download-cifar10-data.sh
 
+# generate a init checkpoint
+./generate-init.sh
+
 # run static baseline
 ./train-cifar10-fixed.sh
 

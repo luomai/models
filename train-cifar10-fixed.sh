@@ -50,6 +50,7 @@ join() {
 
 hooks() {
     echo kungfu_log_step_hook
+    echo kungfu_load_init_model_hook
 }
 
 app_flags() {

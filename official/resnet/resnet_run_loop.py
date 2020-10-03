@@ -27,6 +27,7 @@ import functools
 import math
 import multiprocessing
 import os
+import time
 
 # pylint: disable=g-bad-import-order
 from absl import flags
@@ -613,7 +614,6 @@ def resnet_main(
         #     break
 
       print('begin cycle %d, training %d epochs with bs=%d' % (cycle_index, num_train_epochs, device_batch_size))
-      import time
       cycle_begin = time.time()
       classifier.train(input_fn=lambda: input_fn_train(num_train_epochs, device_batch_size),
                       hooks=train_hooks, max_steps=flags_obj.max_train_steps)
