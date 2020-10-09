@@ -12,6 +12,7 @@ measure() {
 }
 
 cd $(dirname $0)
+. ./config.sh
 
 MODEL_PATH=$PWD
 
@@ -51,6 +52,8 @@ join() {
 hooks() {
     echo kungfu_log_step_hook
     echo kungfu_load_init_model_hook
+
+    echo kungfu_policy
 }
 
 app_flags() {
@@ -84,9 +87,7 @@ train_cifar10() {
 }
 
 run_all() {
-    local epochs=300
-    # local epochs=10
-    # local epochs=1
+    local epochs=$cfg_epochs
 
     measure train_cifar10 $epochs 4 32 # small batch size (SBS) baseline
     # measure train_cifar10 $epochs 4 64

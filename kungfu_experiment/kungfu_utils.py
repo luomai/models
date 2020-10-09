@@ -1,22 +1,15 @@
 import os
 import time
 
-from absl import flags
-from kungfu.python import current_rank
-
 import numpy as np
 import tensorflow as tf
+from absl import flags
+from kungfu.python import current_rank
 from official.utils.flags import core as flags_core
+
 from kungfu_experiment import kungfu_policy
 
-
-# USE_DYNAMIC_BATCH_SIZE = False
-USE_DYNAMIC_BATCH_SIZE = True
-
 START_TIMESTAMP = os.getenv('START_TIMESTAMP')
-KUNGFU_OPT = None  # parsed from flags
-# KUNGFU_OPT = 'ssgd'
-# KUNGFU_OPT = 'gns'
 
 
 def define_kungfu_flags():
@@ -198,3 +191,19 @@ class KungfuLoadInitModelHook(tf.train.SessionRunHook):
 
 
 KungfuChangeBatchSizeHook = kungfu_policy.KungfuChangeBatchSizeHook
+
+
+def create_kungfu_policy(*args, **kwargs):
+    epoch_size = 50000 # CIFAR10
+    epoch_num = 300
+    init_batch_size = flags.FLAGS.batch_size
+
+    if flags.FLAGS.kungfu_opt == 'ssgd':
+        from kungfu_experiment.policy.baseline_policy import BaselinePolicy
+        policy = BaselinePolicy(epoch_size, epoch_num, init_batch_size)
+    elif flags.FLAGS.kungfu_opt == 'gns':
+        from kungfu_experiment.policy.gns_policy import GNSPolicy
+        policy = GNSPolicy(epoch_size, epoch_num, init_batch_size)
+    else:
+        assert False
+    return policy.get_tensorflow_hook()

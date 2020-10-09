@@ -34,6 +34,8 @@ join() {
 hooks() {
     echo kungfu_log_step_hook
     echo kungfu_save_init_model_hook
+
+    echo kungfu_policy
 }
 
 app_flags() {
@@ -44,6 +46,10 @@ app_flags() {
 }
 
 main() {
+    if [ -d $model_dir ]; then
+        rm -fr $model_dir
+    fi
+
     python3 \
         official/resnet/cifar10_main.py \
         $(app_flags) \

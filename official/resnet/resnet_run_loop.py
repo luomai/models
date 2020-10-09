@@ -19,9 +19,7 @@ includes dataset management, hyperparameter and optimizer code, and argument
 parsing. Code for defining the ResNet layers can be found in resnet_model.py.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import functools
 import math
@@ -29,19 +27,15 @@ import multiprocessing
 import os
 import time
 
+import tensorflow as tf
 # pylint: disable=g-bad-import-order
 from absl import flags
-import tensorflow as tf
-from tensorflow.contrib.data.python.ops import threadpool
-
-from official.resnet import resnet_model
-from official.utils.flags import core as flags_core
+from official.resnet import imagenet_preprocessing, resnet_model
 from official.utils.export import export
-from official.utils.logs import hooks_helper
-from official.utils.logs import logger
-from official.resnet import imagenet_preprocessing
-from official.utils.misc import distribution_utils
-from official.utils.misc import model_helpers
+from official.utils.flags import core as flags_core
+from official.utils.logs import hooks_helper, logger
+from official.utils.misc import distribution_utils, model_helpers
+from tensorflow.contrib.data.python.ops import threadpool
 
 
 ################################################################################
@@ -386,18 +380,19 @@ def resnet_model_fn(features, labels, mode, model_class,
     )
 
     # KungFu: wrap optimizer
-    from kungfu_experiment.kungfu_utils import KUNGFU_OPT
-    if KUNGFU_OPT == 'ssgd':
+    if flags.FLAGS.kungfu_opt == 'ssgd':
       from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
       optimizer = SynchronousSGDOptimizer(optimizer)
-    elif KUNGFU_OPT == 'gns':
-      # from kungfu.tensorflow.optimizers import MonitorGradientNoiseScaleOptimizer
-      from kungfu_experiment.gns import MonitorGradientNoiseScaleOptimizer
+    elif flags.FLAGS.kungfu_opt == 'gns':
+      from kungfu.tensorflow.optimizers import \
+          MonitorGradientNoiseScaleOptimizer
+
+      # from kungfu_experiment.gns import MonitorGradientNoiseScaleOptimizer
       init_bs = 32
       device_batch_size = tf.Variable(init_bs, dtype=tf.int32, trainable=False, name='device_batch_size')
-      optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size)
+      optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size, verbose=False)
     else:
-      raise RuntimeError('invalid kungfu optimizer %s' % (KUNGFU_OPT))
+      raise RuntimeError('invalid kungfu optimizer %s' % (flags.FLAGS.kungfu_opt))
 
     def _dense_grad_filter(gvs):
       """Only apply gradient updates to the final layer.
@@ -581,16 +576,15 @@ def resnet_main(
   epoch = 0
   # boundary_epochs = []
   boundary_epochs = [91, 136, 182]
-
-  def get_batch_size():
-    from kungfu_experiment.kungfu_utils import KungfuChangeBatchSizeHook
-    for h in train_hooks:
-      if isinstance(h, KungfuChangeBatchSizeHook):
-        return h._bs
-    return flags_obj.batch_size
-
   # device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
-  device_batch_size = get_batch_size()
+  # get the gns policy
+  from kungfu_experiment.policy.policy_hook import PolicyHook
+
+  for h in train_hooks:
+    if isinstance(h, PolicyHook):
+      kungfu_policy = h.policy
+  assert kungfu_policy is not None
+  device_batch_size = kungfu_policy.get_batch_size()
 
   eval_on_start = True
   if eval_on_start:
@@ -604,9 +598,8 @@ def resnet_main(
     tf.logging.info('Starting cycle: %d/%d', cycle_index, int(n_loops))
 
     if num_train_epochs:
-      from kungfu_experiment.kungfu_utils import USE_DYNAMIC_BATCH_SIZE
-      if USE_DYNAMIC_BATCH_SIZE:
-        device_batch_size = get_batch_size()
+      device_batch_size = kungfu_policy.get_batch_size()
+
         # for e in boundary_epochs:
         #   if trained_epoch <= e and e < trained_epoch + num_train_epochs:
         #     print('change batch size at cycle %d' % (cycle_index))

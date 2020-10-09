@@ -12,6 +12,7 @@ measure() {
 }
 
 cd $(dirname $0)
+. ./config.sh
 
 MODEL_PATH=$PWD
 
@@ -56,7 +57,8 @@ hooks() {
     # echo kungfu_consistency_check_hook
     # echo kungfu_inspect_graph_hook
 
-    echo kungfu_change_batch_size_hook
+    # echo kungfu_change_batch_size_hook
+    echo kungfu_policy
 }
 
 app_flags() {
@@ -90,9 +92,7 @@ train_cifar10() {
 }
 
 run_all() {
-    local epochs=300
-    # local epochs=10
-    # local epochs=1
+    local epochs=$cfg_epochs
 
     measure train_cifar10 $epochs 4 32 # adaptive batch size starting with 4x32
     # measure train_cifar10 $epochs 4 64
