@@ -194,16 +194,21 @@ KungfuChangeBatchSizeHook = kungfu_policy.KungfuChangeBatchSizeHook
 
 
 def create_kungfu_policy(*args, **kwargs):
-    epoch_size = 50000 # CIFAR10
+    epoch_size = 50000  # CIFAR10
     epoch_num = 300
     init_batch_size = flags.FLAGS.batch_size
 
     if flags.FLAGS.kungfu_opt == 'ssgd':
         from kungfu_experiment.policy.baseline_policy import BaselinePolicy
-        policy = BaselinePolicy(epoch_size, epoch_num, init_batch_size)
+        policy = BaselinePolicy(init_batch_size=init_batch_size)
     elif flags.FLAGS.kungfu_opt == 'gns':
         from kungfu_experiment.policy.gns_policy import GNSPolicy
-        policy = GNSPolicy(epoch_size, epoch_num, init_batch_size)
+        policy = GNSPolicy(init_batch_size=init_batch_size)
     else:
         assert False
-    return policy.get_tensorflow_hook()
+
+    from kungfu.tensorflow.policy import PolicyHook
+    return PolicyHook([policy],
+                      epoch_size=epoch_size,
+                      epoch_num=epoch_num,
+                      init_batch_size=init_batch_size)

@@ -384,12 +384,13 @@ def resnet_model_fn(features, labels, mode, model_class,
       from kungfu.tensorflow.optimizers import SynchronousSGDOptimizer
       optimizer = SynchronousSGDOptimizer(optimizer)
     elif flags.FLAGS.kungfu_opt == 'gns':
+      import kungfu.tensorflow as kf
       from kungfu.tensorflow.optimizers import \
           MonitorGradientNoiseScaleOptimizer
 
       # from kungfu_experiment.gns import MonitorGradientNoiseScaleOptimizer
       init_bs = 32
-      device_batch_size = tf.Variable(init_bs, dtype=tf.int32, trainable=False, name='device_batch_size')
+      device_batch_size = kf.get_or_create_batch_size(init_bs)
       optimizer = MonitorGradientNoiseScaleOptimizer(optimizer, device_batch_size, verbose=False)
     else:
       raise RuntimeError('invalid kungfu optimizer %s' % (flags.FLAGS.kungfu_opt))
@@ -578,11 +579,11 @@ def resnet_main(
   boundary_epochs = [91, 136, 182]
   # device_batch_size = distribution_utils.per_device_batch_size(flags_obj.batch_size, flags_core.get_num_gpus(flags_obj))
   # get the gns policy
-  from kungfu_experiment.policy.policy_hook import PolicyHook
+  from kungfu.tensorflow.policy import PolicyHook
 
   for h in train_hooks:
     if isinstance(h, PolicyHook):
-      kungfu_policy = h.policy
+      kungfu_policy = h.policies[0]
   assert kungfu_policy is not None
   device_batch_size = kungfu_policy.get_batch_size()
 

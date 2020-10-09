@@ -1,29 +1,22 @@
 import kungfu.tensorflow as kf
 import tensorflow as tf
+from kungfu.tensorflow.policy import BasePolicy
 
-from .base_policy import KungFuPolicy
 
-
-class BaselinePolicy(KungFuPolicy):
-    def __init__(self, epoch_size, epoch_num, init_batch_size, *args,
-                 **kwargs):
-        super(BaselinePolicy, self).__init__(epoch_size, epoch_num,
-                                          init_batch_size, *args, **kwargs)
+class BaselinePolicy(BasePolicy):
+    def __init__(self, init_batch_size):
         self._bs = init_batch_size
 
-    def before_train(self, vars, params):
+    def before_train(self):
         pass
 
-    def _run_sync_op(self):
+    def before_epoch(self, sess):
         pass
 
-    def before_epoch(self, vars, params):
+    def after_step(self, sess):
         pass
 
-    def after_step(self, sess, vars, params, grads):
-        pass
-
-    def after_epoch(self, sess, vars, params):
+    def after_epoch(self, sess):
         pass
 
     def get_batch_size(self):

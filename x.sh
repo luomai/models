@@ -18,7 +18,6 @@ measure() {
 }
 
 main() {
-
     # download dataset to $HOME/var/data/cifar
     measure ./download-cifar10-data.sh
 
@@ -30,7 +29,6 @@ main() {
 
     # run static baseline
     measure ./train-cifar10-fixed.sh
-
 }
 
 notify "BEGIN $0"
